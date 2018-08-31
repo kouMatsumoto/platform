@@ -13,7 +13,7 @@ import {
   RoutesRecognized,
   NavigationStart,
 } from '@angular/router';
-import { select, Store } from '@ngrx/store';
+import { select, Selector, Store } from '@ngrx/store';
 import { withLatestFrom } from 'rxjs/operators';
 
 import {
@@ -31,7 +31,7 @@ import {
 } from './serializer';
 
 export interface StoreRouterConfig {
-  stateKey?: string;
+  stateKeyOrSelector?: string | Selector<any, any>;
   serializer?: new (...args: any[]) => RouterStateSerializer;
   /**
    * By default, ROUTER_NAVIGATION is dispatched before guards and resolvers run.
@@ -60,7 +60,7 @@ export function _createRouterConfig(
   config: StoreRouterConfig
 ): StoreRouterConfig {
   return {
-    stateKey: DEFAULT_ROUTER_FEATURENAME,
+    stateKeyOrSelector: DEFAULT_ROUTER_FEATURENAME,
     serializer: DefaultRouterStateSerializer,
     navigationActionTiming: NavigationActionTiming.PreActivation,
     ...config,
@@ -152,7 +152,7 @@ export class StoreRouterConnectingModule {
   private storeState: any;
   private trigger = RouterTrigger.NONE;
 
-  private stateKey: string;
+  private stateKeyOrSelector: string | Selector<any, any>;
 
   constructor(
     private store: Store<any>,
@@ -161,7 +161,7 @@ export class StoreRouterConnectingModule {
     private errorHandler: ErrorHandler,
     @Inject(ROUTER_CONFIG) private config: StoreRouterConfig
   ) {
-    this.stateKey = this.config.stateKey as string;
+    this.stateKeyOrSelector = this.config.stateKeyOrSelector!;
 
     this.setUpStoreStateListener();
     this.setUpRouterEventsListener();
@@ -170,7 +170,7 @@ export class StoreRouterConnectingModule {
   private setUpStoreStateListener(): void {
     this.store
       .pipe(
-        select(this.stateKey),
+        select(this.stateKeyOrSelector),
         withLatestFrom(this.store)
       )
       .subscribe(([routerStoreState, storeState]) => {
